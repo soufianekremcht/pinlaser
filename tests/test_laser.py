@@ -1,0 +1,68 @@
+from laser import FRAME_TIME, LaserEffect
+
+
+class FakeSettings:
+    trail_length = 40
+    glow_radius = 28.0
+    color = "#ff2a1a"
+
+
+class FakeClock:
+    def __init__(self):
+        self.t = 0.0
+
+    def __call__(self):
+        return self.t
+
+
+def make_laser(trail_length=40):
+    laser = LaserEffect(FakeSettings())
+    laser._settings.trail_length = trail_length
+    clock = FakeClock()
+    laser._clock = clock
+    return laser, clock
+
+
+def test_update_pos_appends_when_active():
+    laser, _ = make_laser()
+    laser.update_pos(10, 20, True)
+    laser.update_pos(11, 21, True)
+    assert len(laser._trail) == 2
+
+
+def test_update_pos_skips_when_inactive():
+    laser, _ = make_laser()
+    laser.update_pos(10, 20, False)
+    assert len(laser._trail) == 0
+
+
+def test_trail_trimmed_to_max_length():
+    laser, _ = make_laser(trail_length=5)
+    for i in range(20):
+        laser.update_pos(float(i), 0.0, True)
+        laser._clock.t += FRAME_TIME
+    assert len(laser._trail) <= 5
+
+
+def test_trail_expires_after_duration():
+    laser, clock = make_laser(trail_length=10)
+    for _ in range(10):
+        laser.update_pos(1.0, 1.0, True)
+        clock.t += FRAME_TIME
+    assert len(laser._trail) == 10
+    clock.t += 10 * FRAME_TIME
+    laser.update_pos(1.0, 1.0, True)
+    assert len(laser._trail) == 1
+
+
+def test_clear_empties_trail():
+    laser, _ = make_laser()
+    laser.update_pos(10, 20, True)
+    laser.clear()
+    assert len(laser._trail) == 0
+
+
+def test_pos_updated_even_when_inactive():
+    laser, _ = make_laser()
+    laser.update_pos(30, 40, False)
+    assert laser._pos == (30.0, 40.0)

@@ -1,4 +1,4 @@
-from laser import FRAME_TIME, LaserEffect
+from laser import FRAME_TIME, MAX_SUBDIV, LaserEffect, subdivide_segment
 
 
 class FakeSettings:
@@ -66,3 +66,31 @@ def test_pos_updated_even_when_inactive():
     laser, _ = make_laser()
     laser.update_pos(30, 40, False)
     assert laser._pos == (30.0, 40.0)
+
+
+def test_subdivide_preserves_endpoints_and_fades_increase():
+    duration = 10 * FRAME_TIME
+    now = 1.0
+    p1 = (0.0, 0.0, now - duration)
+    p2 = (100.0, 0.0, now)
+    segs = subdivide_segment(p1, p2, now, duration)
+    assert segs
+    assert segs[0][0] == 0.0 and segs[0][1] == 0.0
+    assert segs[-1][2] == 100.0 and segs[-1][3] == 0.0
+    fades = [s[4] for s in segs]
+    assert all(0.0 <= f <= 1.0 for f in fades)
+    assert fades == sorted(fades)
+
+
+def test_subdivide_count_capped():
+    p1 = (0.0, 0.0, 0.0)
+    p2 = (100000.0, 0.0, 1.0)
+    segs = subdivide_segment(p1, p2, 1.0, 1.0)
+    assert 1 <= len(segs) <= MAX_SUBDIV
+
+
+def test_subdivide_empty_when_fully_expired():
+    duration = 10 * FRAME_TIME
+    p1 = (0.0, 0.0, 0.0)
+    p2 = (1.0, 0.0, 0.0)
+    assert subdivide_segment(p1, p2, 1.0, duration) == []

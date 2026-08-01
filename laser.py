@@ -6,6 +6,34 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QRadialGradient
 
 FRAME_TIME = 0.016
+STEP = 5.0
+MAX_SUBDIV = 10
+
+
+def _clamp01(value):
+    if value < 0.0:
+        return 0.0
+    if value > 1.0:
+        return 1.0
+    return value
+
+
+def subdivide_segment(p1, p2, now, duration):
+    x1, y1, t1 = p1
+    x2, y2, t2 = p2
+    fade1 = _clamp01(1.0 - (now - t1) / duration)
+    fade2 = _clamp01(1.0 - (now - t2) / duration)
+    if fade1 <= 0.0 and fade2 <= 0.0:
+        return []
+    length = math.hypot(x2 - x1, y2 - y1)
+    n = max(1, min(int(math.ceil(length / STEP)), MAX_SUBDIV))
+    dx, dy = (x2 - x1) / n, (y2 - y1) / n
+    dfade = (fade2 - fade1) / n
+    return [
+        (x1 + dx * i, y1 + dy * i, x1 + dx * (i + 1), y1 + dy * (i + 1),
+         fade1 + dfade * (i + 0.5))
+        for i in range(n)
+    ]
 
 
 class LaserEffect:
@@ -58,24 +86,22 @@ class LaserEffect:
         if len(pts) < 2:
             return
         base = self._color
+        duration = self._trail_duration
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        for (x1, y1, _), (x2, y2, t2) in zip(pts, pts[1:]):
-            age = (now - t2) / self._trail_duration
-            if age >= 1.0:
-                continue
-            fade = 1.0 - age
-            alpha = int(220 * fade)
-            width = 1.0 + self._trail_width * fade
-            painter.setPen(
-                QPen(
-                    QColor(base.red(), base.green(), base.blue(), alpha),
-                    width,
-                    Qt.PenStyle.SolidLine,
-                    Qt.PenCapStyle.RoundCap,
-                    Qt.PenJoinStyle.RoundJoin,
+        for p1, p2 in zip(pts, pts[1:]):
+            for x1, y1, x2, y2, fade in subdivide_segment(p1, p2, now, duration):
+                alpha = int(220 * fade)
+                width = 1.0 + self._trail_width * fade
+                painter.setPen(
+                    QPen(
+                        QColor(base.red(), base.green(), base.blue(), alpha),
+                        width,
+                        Qt.PenStyle.SolidLine,
+                        Qt.PenCapStyle.RoundCap,
+                        Qt.PenJoinStyle.RoundJoin,
+                    )
                 )
-            )
-            painter.drawLine(QPointF(x1, y1), QPointF(x2, y2))
+                painter.drawLine(QPointF(x1, y1), QPointF(x2, y2))
 
     def _draw_dot(self, painter, now):
         x, y = self._pos

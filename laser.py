@@ -31,7 +31,7 @@ class LaserEffect:
     def _trail_width(self):
         return max(4.0, self._glow_radius * 0.55)
 
-        @property
+    @property
     def _color(self):
         return QColor(self._settings.color)
 

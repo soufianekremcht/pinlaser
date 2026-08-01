@@ -7,3 +7,4 @@ dist/
 *.spec
 packaging/pinlaser.ico
 *.zip
+.opencode/

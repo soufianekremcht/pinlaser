@@ -6,6 +6,7 @@ DEFAULTS = {
     "color": "#ff2a1a",
     "glow_radius": 28.0,
     "trail_length": 40,
+    "first_run": True,
 }
 
 
@@ -25,6 +26,9 @@ class AppSettings:
         self.trail_length = int(
             self._store.value("trail_length", DEFAULTS["trail_length"], type=int)
         )
+        self.first_run = bool(
+            self._store.value("first_run", DEFAULTS["first_run"], type=bool)
+        )
 
     def save(self):
         self._store.setValue("trail_on_click", self.trail_on_click)
@@ -32,4 +36,5 @@ class AppSettings:
         self._store.setValue("color", self.color)
         self._store.setValue("glow_radius", self.glow_radius)
         self._store.setValue("trail_length", self.trail_length)
+        self._store.setValue("first_run", self.first_run)
         self._store.sync()

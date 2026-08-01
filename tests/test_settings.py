@@ -21,6 +21,7 @@ def test_defaults():
         assert settings.color == DEFAULTS["color"]
         assert settings.glow_radius == DEFAULTS["glow_radius"]
         assert settings.trail_length == DEFAULTS["trail_length"]
+        assert settings.first_run is True
 
 
 def test_save_load_roundtrip():
@@ -33,6 +34,7 @@ def test_save_load_roundtrip():
         settings.color = "#00ff00"
         settings.glow_radius = 50.0
         settings.trail_length = 12
+        settings.first_run = False
         settings.save()
 
         store = make_store(path)
@@ -42,3 +44,4 @@ def test_save_load_roundtrip():
         assert loaded.color == "#00ff00"
         assert loaded.glow_radius == 50.0
         assert loaded.trail_length == 12
+        assert loaded.first_run is False

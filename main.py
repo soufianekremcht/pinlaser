@@ -66,6 +66,21 @@ def acquire_lock():
     return lock
 
 
+def show_welcome_if_first_run(settings):
+    if os.environ.get("PINLASER_SMOKE") or not settings.first_run:
+        return
+    settings.first_run = False
+    settings.save()
+    box = QMessageBox(QMessageBox.Icon.Information, "Pin Laser",
+        "Pin Laser is now running.")
+    box.setInformativeText(
+        "Press Ctrl+Shift+L to show/hide the laser,\n"
+        "or left-click the tray icon to toggle it."
+    )
+    box.setStandardButtons(QMessageBox.StandardButton.Ok)
+    box.exec()
+
+
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Pin Laser")
@@ -113,6 +128,8 @@ def main():
 
     if os.environ.get("PINLASER_SMOKE"):
         QTimer.singleShot(2000, app.quit)
+
+    show_welcome_if_first_run(settings)
 
     sys.exit(app.exec())
 

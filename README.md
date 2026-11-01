@@ -99,3 +99,15 @@ packaging\build.bat    # -> dist\PinLaser.exe
 | SmartScreen warning on first run | **More info → Run anyway** (unsigned exe) |
 | Antivirus flags the exe | False positive — add an exception |
 | Hotkey doesn't work | Another app may be using `Ctrl+Shift+L`; use the tray menu |
+
+## Code signing
+
+Releases are currently **unsigned**. An application for free code signing via
+[SignPath Foundation](https://about.signpath.io) is in progress; once approved,
+new tagged releases are built and signed automatically by the CI pipeline
+(`.github/workflows/release.yml`), so future downloads from the Releases page
+will be authentic and tamper-checked.
+
+## License
+
+Released under the [MIT License](LICENSE).

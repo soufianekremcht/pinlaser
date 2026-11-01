@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -9,6 +10,26 @@ from hotkeys import HotkeyManager
 from overlay import OverlayWindow
 from settings import AppSettings
 from settings_dialog import SettingsDialog
+
+logger = logging.getLogger("pinlaser")
+
+
+def setup_logging():
+    directory = QStandardPaths.writableLocation(
+        QStandardPaths.StandardLocation.AppLocalDataLocation
+    )
+    os.makedirs(directory, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        handlers=[
+            logging.FileHandler(
+                os.path.join(directory, "pinlaser.log"), encoding="utf-8"
+            ),
+            logging.StreamHandler(),
+        ],
+        force=True,
+    )
 
 
 def resource_path(name):
@@ -71,6 +92,7 @@ def show_welcome_if_first_run(settings):
         return
     settings.first_run = False
     settings.save()
+    logger.info("showing first-run welcome dialog")
     box = QMessageBox(QMessageBox.Icon.Information, "Pin Laser",
         "Pin Laser is now running.")
     box.setInformativeText(
@@ -85,8 +107,11 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Pin Laser")
     app.setQuitOnLastWindowClosed(False)
+    app.setWindowIcon(load_icon())
+    setup_logging()
 
     lock = acquire_lock()
+    logger.info("Pin Laser started (pid=%d)", os.getpid())
 
     settings = AppSettings()
     overlay = OverlayWindow(app, settings)
@@ -111,6 +136,7 @@ def main():
 
     hotkeys = HotkeyManager(app)
     if hotkeys.register(overlay.toggle_laser):
+        logger.info("global hotkey Ctrl+Shift+L registered")
         tray.showMessage(
             "Pin Laser",
             "Press Ctrl+Shift+L to toggle the laser pointer.",
@@ -118,6 +144,7 @@ def main():
             3000,
         )
     else:
+        logger.warning("could not register global hotkey Ctrl+Shift+L")
         tray.showMessage(
             "Pin Laser",
             "Could not register hotkey Ctrl+Shift+L (already in use?). Use the tray menu instead.",
@@ -125,6 +152,7 @@ def main():
             4000,
         )
     app.aboutToQuit.connect(hotkeys.unregister)
+    app.aboutToQuit.connect(lambda: logger.info("Pin Laser exiting"))
 
     if os.environ.get("PINLASER_SMOKE"):
         QTimer.singleShot(2000, app.quit)
